@@ -1,2 +1,0 @@
-# nse-telegram-bot
-Nse 
