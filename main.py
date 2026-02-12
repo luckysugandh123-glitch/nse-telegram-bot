@@ -9,7 +9,7 @@ from datetime import datetime
 BOT_TOKEN = os.environ.get("8492113943:AAGfAo14XXmEdN78W8qed7GwVsZml-jliX8")
 CHAT_ID = os.environ.get("8099868217")
 
-bot = telegram.Bot(token=BOT_TOKEN)
+bot = telegram.Bot(token=8492113943:AAGfAo14XXmEdN78W8qed7GwVsZml-jliX8)
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
