@@ -1,3 +1,4 @@
+
 import requests
 import telegram
 import pytz
@@ -8,60 +9,66 @@ from datetime import datetime
 BOT_TOKEN = os.environ.get("8492113943:AAGfAo14XXmEdN78W8qed7GwVsZml-jliX8")
 CHAT_ID = os.environ.get("8099868217")
 
-bot = telegram.Bot(token= 8492113943:AAGfAo14XXmEdN78W8qed7GwVsZml-jliX8)
+bot = telegram.Bot(token=BOT_TOKEN)
 
 headers = {
-    "User-Agent": "Mozilla/5.0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.nseindia.com/market-data/top-gainers-losers",
 }
 
 def is_market_time():
-    ist = pytz.timezone('Asia/Kolkata')
+    ist = pytz.timezone("Asia/Kolkata")
     now = datetime.now(ist)
 
     if now.weekday() >= 5:
         return False
 
-    return (now.hour > 9 or (now.hour == 9 and now.minute >= 15)) and \
-           (now.hour < 15 or (now.hour == 15 and now.minute <= 30))
+    return (now.hour > 9 or (now.hour == 9 and now.minute >= 15)) and (now.hour < 15 or (now.hour == 15 and now.minute <= 30))
 
-def fetch_data(index_type):
+def get_page_data():
     session = requests.Session()
-    session.get("https://www.nseindia.com", headers=headers)
+    # Visit the real page first (to get cookies)
+    session.get("https://www.nseindia.com/market-data/top-gainers-losers", headers=headers)
 
-    url = f"https://www.nseindia.com/api/live-analysis-variations?index={index_type}"
-    response = session.get(url, headers=headers)
-    data = response.json()
+    # Then call the actual API endpoints
+    gainers_url = "https://www.nseindia.com/api/live-analysis-variations?index=gainers"
+    losers_url = "https://www.nseindia.com/api/live-analysis-variations?index=losers"
 
-    message = f"📊 TOP {index_type.upper()}\n\n"
+    gainers_resp = session.get(gainers_url, headers=headers).json()
+    losers_resp = session.get(losers_url, headers=headers).json()
 
-    for stock in data['data']:
-        message += (
-            f"{stock.get('symbol')}\n"
-            f"Open: {stock.get('openPrice')}\n"
-            f"High: {stock.get('dayHigh')}\n"
-            f"Low: {stock.get('dayLow')}\n"
-            f"Volume: {stock.get('totalTradedVolume')}\n\n"
-        )
-
-    return message
-
-print("Bot Started...")
+    return gainers_resp, losers_resp
 
 while True:
-    if is_market_time():
-        try:
-            gainers = fetch_data("gainers")
-            losers = fetch_data("losers")
+    print("Checking market...")
 
-            bot.send_message(chat_id=CHAT_ID, text=gainers)
-            bot.send_message(chat_id=CHAT_ID, text=losers)
+    try:
+        if is_market_time():
+            gainers_data, losers_data = get_page_data()
 
-            print("Sent Successfully")
+            # Build messages
+            gainers_msg = "📈 TOP GAINERS\n\n"
+            for stock in gainers_data.get("data", []):
+                gainers_msg += (
+                    f"{stock.get('symbol')} | O:{stock.get('openPrice')} | H:{stock.get('dayHigh')} | L:{stock.get('dayLow')} | V:{stock.get('totalTradedVolume')}\n"
+                )
 
-        except Exception as e:
-            print("Error:", e)
-    else:
-        print("Market Closed")
+            losers_msg = "📉 TOP LOSERS\n\n"
+            for stock in losers_data.get("data", []):
+                losers_msg += (
+                    f"{stock.get('symbol')} | O:{stock.get('openPrice')} | H:{stock.get('dayHigh')} | L:{stock.get('dayLow')} | V:{stock.get('totalTradedVolume')}\n"
+                )
 
-    time.sleep(180)
+            bot.send_message(chat_id=CHAT_ID, text=gainers_msg)
+            bot.send_message(chat_id=CHAT_ID, text=losers_msg)
+
+            print("Sent messages")
+
+        else:
+            print("Market Closed")
+
+    except Exception as e:
+        print("Error:", e)
+
+    time.sleep(180)  # 3 minutes
