@@ -39,7 +39,7 @@ def is_market_time():
 import requests
 import time
 
-def message = fetch_data()
+def fetch_data():
     session = requests.Session()
 
     headers = {
