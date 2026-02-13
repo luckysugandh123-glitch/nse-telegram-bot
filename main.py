@@ -40,25 +40,35 @@ def fetch_data(index_type):
     session = requests.Session()
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.nseindia.com/market-data/top-gainers-losers",
         "Connection": "keep-alive",
     }
 
-    # First visit homepage to get cookies
+    # Step 1: Visit homepage first (VERY IMPORTANT)
     session.get("https://www.nseindia.com", headers=headers)
+    time.sleep(1)
 
+    # Step 2: Call API
     api_url = f"https://www.nseindia.com/api/live-analysis-variations?index={index_type}"
-
     response = session.get(api_url, headers=headers)
+
+    # If blocked
+    if response.status_code != 200:
+        print("Blocked by NSE:", response.status_code)
+        return "⚠ NSE blocked request"
 
     try:
         data = response.json()
     except Exception:
-        print("NSE returned non-JSON response:", response.text[:200])
-        return "⚠️ NSE blocked the request."
+        print("Non JSON response:", response.text[:200])
+        return "⚠ NSE returned HTML instead of JSON"
+
+    if not isinstance(data, dict):
+        print("Unexpected response type:", type(data))
+        return "⚠ Unexpected NSE response"
 
     message = f"📊 TOP {index_type.upper()}\n\n"
 
