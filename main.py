@@ -36,49 +36,45 @@ def is_market_time():
         (now.hour < 15 or (now.hour == 15 and now.minute <= 30))
     )
 
-def fetch_data(index_type):
+import requests
+import time
+
+def fetch_data():
     session = requests.Session()
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.nseindia.com/market-data/top-gainers-losers",
-        "Connection": "keep-alive",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://www.nseindia.com",
     }
 
-    # Step 1: Visit homepage first (VERY IMPORTANT)
+    # Step 1: get cookies
     session.get("https://www.nseindia.com", headers=headers)
     time.sleep(1)
 
-    # Step 2: Call API
-    api_url = f"https://www.nseindia.com/api/live-analysis-variations?index={index_type}"
-    response = session.get(api_url, headers=headers)
+    # Step 2: API call
+    url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050"
+    response = session.get(url, headers=headers)
 
-    # If blocked
     if response.status_code != 200:
-        print("Blocked by NSE:", response.status_code)
-        return "⚠ NSE blocked request"
+        print("Blocked:", response.status_code)
+        return
 
     try:
         data = response.json()
-    except Exception:
-        print("Non JSON response:", response.text[:200])
-        return "⚠ NSE returned HTML instead of JSON"
+    except:
+        print("Not JSON:", response.text[:200])
+        return
 
-    if not isinstance(data, dict):
-        print("Unexpected response type:", type(data))
-        return "⚠ Unexpected NSE response"
+    stocks = data.get("data", [])[:10]
 
-    message = f"📊 TOP {index_type.upper()}\n\n"
+    message = "📊 NIFTY 50 DATA\n\n"
 
-    for stock in data.get("data", [])[:10]:
+    for stock in stocks:
         message += (
             f"{stock.get('symbol')} | "
-            f"O:{stock.get('openPrice')} | "
-            f"H:{stock.get('dayHigh')} | "
-            f"L:{stock.get('dayLow')} | "
-            f"V:{stock.get('totalTradedVolume')}\n"
+            f"LTP: {stock.get('lastPrice')} | "
+            f"%: {stock.get('pChange')}%\n"
         )
 
     return message
