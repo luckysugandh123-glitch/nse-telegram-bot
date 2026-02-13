@@ -1,5 +1,5 @@
 import requests
-import telegram
+import telegram Bot
 import pytz
 import os
 import time
